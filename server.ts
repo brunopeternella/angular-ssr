@@ -16,9 +16,13 @@ export function app(): express.Express {
 
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
+  server.use(express.json())
 
   // Example Express Rest API endpoints
-  // server.get('/api/**', (req, res) => { });
+  server.get('/api/teste', (req, res) => { 
+    res.status(200).send({'test': 'ok'})
+  });
+
   // Serve static files from /browser
   server.get('*.*', express.static(browserDistFolder, {
     maxAge: '1y'
@@ -26,6 +30,7 @@ export function app(): express.Express {
 
   // All regular routes use the Angular engine
   server.get('*', (req, res, next) => {
+
     const { protocol, originalUrl, baseUrl, headers } = req;
 
     commonEngine
@@ -38,10 +43,11 @@ export function app(): express.Express {
       })
       .then((html) => res.send(html))
       .catch((err) => next(err));
-  });
+  });  
 
   return server;
 }
+
 
 function run(): void {
   const port = process.env['PORT'] || 4000;
