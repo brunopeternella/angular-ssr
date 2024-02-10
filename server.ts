@@ -1,62 +1,28 @@
-import { APP_BASE_HREF } from '@angular/common';
-import { CommonEngine } from '@angular/ssr';
-import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import bootstrap from './src/main.server';
+import { NestFactory } from '@nestjs/core';
+import { ApiModule } from './src/api/api.module';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
+import express from 'express';
 
-// The Express app is exported so that it can be used by serverless Functions.
-export function app(): express.Express {
-  const server = express();
-  const serverDistFolder = dirname(fileURLToPath(import.meta.url));
-  const browserDistFolder = resolve(serverDistFolder, '../browser');
-  const indexHtml = join(serverDistFolder, 'index.server.html');
+export async function app() {
+    const serverDistFolder = dirname(fileURLToPath(import.meta.url));
+    const browserDistFolder = resolve(serverDistFolder, '../browser');
 
-  const commonEngine = new CommonEngine();
+    const expressServer = express()
+    expressServer.use(express.static(browserDistFolder, {maxAge: '1y'}))
+  
+    const nestServer = await NestFactory.create<NestExpressApplication>(
+      ApiModule, 
+      new ExpressAdapter(expressServer))
 
-  server.set('view engine', 'html');
-  server.set('views', browserDistFolder);
-  server.use(express.json())
+    nestServer.setViewEngine('html')
+    nestServer.setBaseViewsDir(browserDistFolder)
 
-  // Example Express Rest API endpoints
-  server.get('/api/teste', (req, res) => { 
-    res.status(200).send({'test': 'ok'})
-  });
-
-  // Serve static files from /browser
-  server.get('*.*', express.static(browserDistFolder, {
-    maxAge: '1y'
-  }));
-
-  // All regular routes use the Angular engine
-  server.get('*', (req, res, next) => {
-
-    const { protocol, originalUrl, baseUrl, headers } = req;
-
-    commonEngine
-      .render({
-        bootstrap,
-        documentFilePath: indexHtml,
-        url: `${protocol}://${headers.host}${originalUrl}`,
-        publicPath: browserDistFolder,
-        providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
-      })
-      .then((html) => res.send(html))
-      .catch((err) => next(err));
-  });  
-
-  return server;
+    const port = process.env['PORT'] || 4000;
+    await nestServer.listen(port, () => {
+      console.log(`Node NestJS server listening on http://localhost:${port}`);
+    })
 }
 
-
-function run(): void {
-  const port = process.env['PORT'] || 4000;
-
-  // Start up the Node server
-  const server = app();
-  server.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
-  });
-}
-
-run();
+app();

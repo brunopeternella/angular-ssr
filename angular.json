@@ -56,7 +56,7 @@
               "sourceMap": true
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
@@ -99,7 +99,7 @@
           "options": {
             "outputPath": "dist/angular17-ssr/server",
             "main": "./server.ts",
-            "tsConfig": "./tsconfig.server.json",
+            "tsConfig": "./tsconfig.app.json",
             "buildOptimizer": false,
             "optimization": false,
             "sourceMap": true,
